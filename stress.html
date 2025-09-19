@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MindGrafts Stress Assessment</title>
+<style>
+  :root{
+    --accent:#d62828;
+    --ok:#0a7a3e;
+    --warn:#ff8c00;
+    --danger:#d62828;
+    --card:#f7f8fb;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  }
+  body{margin:0;background:#f2f4f8;color:#0b1a2b;padding:24px;}
+  .container{max-width:980px;margin:0 auto;background:white;border-radius:12px;padding:22px;box-shadow:0 6px 30px rgba(15,20,30,0.08);}
+  .logo{display:block;margin:0 auto 16px auto;max-width:220px}
+  h1{text-align:center;margin-bottom:8px;color:#d62828;}
+  p.lead{text-align:center;color:#334155;margin-bottom:20px;}
+  .card{background:var(--card);padding:12px;border-radius:10px;margin-top:14px;}
+  label{display:block;font-weight:600;margin-bottom:6px;}
+  .item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(0,0,0,0.05);}
+  input[type=number]{width:72px;padding:8px;border-radius:8px;border:1px solid #dfe6ef;text-align:center;}
+  .btn{background:var(--accent);color:white;padding:10px 12px;border-radius:8px;border:none;font-weight:600;cursor:pointer;}
+  .muted{color:#475569;font-size:13px;}
+  .small{font-size:13px;color:#334155}
+  .result{padding:12px;border-radius:10px;background:linear-gradient(90deg,rgba(214,40,40,0.05),transparent);}
+  .badge{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700;}
+  .low{background:#e6f4ea;color:var(--ok)}
+  .mod{background:#fff7e6;color:var(--warn)}
+  .high{background:#ffe5e5;color:var(--danger)}
+</style>
+</head>
+<body>
+  <div class="container">
+    <img src="https://i.ibb.co/bT7k80C/Mingrafts-LOGO.jpg" alt="MindGrafts Logo" class="logo" />
+    <h1>MindGrafts Stress Assessment</h1>
+    <p class="lead">Answer 20 quick questions, check your symptoms, and discover how stress silently drains your time, money, and health — then reclaim them.</p>
+
+    <!-- Stress Questions -->
+    <div class="card">
+      <label>Stress Management Questions (1 = almost always → 5 = never)</label>
+      <div id="questions"></div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+        <button class="btn" id="computeBtn">Calculate Score</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="result" id="scoreDisplay" aria-live="polite">
+          <strong>Result:</strong> <span id="resultText">— not calculated yet —</span>
+          <div style="margin-top:8px" id="vulnBox"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stress Symptom Checklist -->
+    <div class="card">
+      <label>Stress Symptom Checklist</label>
+      <p class="small muted">Select all symptoms you’ve experienced recently:</p>
+      <div id="symptomList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <div class="small">Total checked:</div><div id="symptomCount" style="font-weight:800">0</div>
+        <div style="margin-left:auto" id="symptomLevel" class="badge low">—</div>
+      </div>
+    </div>
+
+    <!-- Hours Wasted -->
+    <div class="card">
+      <label>Estimated Hours Wasted Due to Stress</label>
+      <div id="hoursBox" class="small muted">
+        Complete the test to see how stress impacts your time across procrastination, poor sleep, disorganization, and more.
+      </div>
+    </div>
+
+    <!-- ROI -->
+    <div class="card">
+      <label>ROI Calculator</label>
+      <div class="small muted">See how stress drains your wallet too. Adjust the assumptions below.</div>
+      <div style="margin-top:10px">
+        <div style="margin-bottom:8px"><label>Rupees per hour (₹)</label><input type="number" id="rupeePerHour" value="300" min="0"></div>
+        <div style="margin-bottom:8px"><label>Discounted therapy session price (₹)</label><input type="number" id="therapyPrice" value="299" min="0"></div>
+      </div>
+      <div style="margin-top:12px" id="roiBox" class="small"></div>
+    </div>
+
+    <!-- CTA -->
+    <div class="card" id="ctaBox" style="display:none;text-align:center">
+      <h3 style="margin-bottom:12px;color:#d62828;">Your stress is costing you dearly.</h3>
+      <p class="small muted">Book a discounted therapy session now for just ₹299 and start reclaiming your time, focus, and health.</p>
+      <button class="btn" id="bookBtn" style="margin-top:10px">Book Session — ₹299</button>
+    </div>
+
+    <footer style="margin-top:18px;color:#475569;font-size:13px;text-align:center">
+      © MindGrafts — Renew • Reconnect • Rebuild
+    </footer>
+  </div>
+
+<script>
+const questions = [
+  "I eat at least one hot, balanced meal a day.",
+  "I get 7-8 hours of sleep at least 4 nights per week.",
+  "I give and receive affection regularly.",
+  "I have at least one family member within 50 miles on whom I can rely.",
+  "I exercise to the point of breaking a sweat at least twice per week.",
+  "I smoke less than a half a pack of cigarettes a day.",
+  "I take fewer than 5 alcoholic drinks a week.",
+  "My weight is appropriate for my height.",
+  "I have an income that meets my basic expenses.",
+  "I get strength from my spiritual beliefs.",
+  "I regularly attend club or social activities.",
+  "I have a network of good friends and acquaintances.",
+  "I have one or more friends to confide in about personal matters.",
+  "I am in good health.",
+  "I am able to speak openly about my feelings when angry or worried.",
+  "I do something fun at least one time per week.",
+  "I am able to talk with the people I live with about domestic issues.",
+  "I am able to organize my time effectively.",
+  "I take quiet/relaxation time for myself during the day.",
+  "I drink fewer than 3 cups of caffeinated drinks per day."
+];
+
+const symptomItems = [
+  "Stomach issues or nervous stomach",
+  "Appetite or weight changes",
+  "Muscle tightness or cramps",
+  "Back or chest pain",
+  "Headaches or migraines",
+  "Frequent illness or sore throat",
+  "Skin issues or rashes",
+  "Rapid heartbeat or high BP",
+  "Fatigue, low energy",
+  "Sleep problems (too little/too much)",
+  "Excessive video games/TV",
+  "Substance use (alcohol, tobacco, drugs)",
+  "Overeating or undereating",
+  "Temper issues or frequent arguments",
+  "Skipping commitments or classes",
+  "Compulsive habits (checking, cleaning)",
+  "Nervous habits (nail biting, etc.)",
+  "Sexual problems",
+  "Isolation or recklessness",
+  "Poor concentration or memory slips"
+];
+
+function el(q){ return document.getElementById(q); }
+
+function buildQuestions(){
+  const container = el('questions');
+  questions.forEach((q, i)=>{
+    const div = document.createElement('div');
+    div.className = 'item';
+    const label = document.createElement('div');
+    label.style.flex='1';
+    label.innerHTML = `<div style="font-weight:600">${i+1}. ${q}</div>`;
+    const input = document.createElement('input');
+    input.type='number';
+    input.min=1; input.max=5; input.value=3;
+    div.appendChild(label);
+    div.appendChild(input);
+    container.appendChild(div);
+  });
+}
+
+function buildSymptoms(){
+  const container = el('symptomList');
+  symptomItems.forEach((s, i)=>{
+    const cb = document.createElement('input');
+    cb.type='checkbox'; cb.id='sym'+i;
+    cb.addEventListener('change', updateSymptomCount);
+    const lab = document.createElement('label');
+    lab.htmlFor = cb.id;
+    lab.style.flex='1';
+    lab.innerText = s;
+    const wrap = document.createElement('div');
+    wrap.style.display='flex';wrap.style.gap='6px';
+    wrap.appendChild(cb); wrap.appendChild(lab);
+    container.appendChild(wrap);
+  });
+}
+
+function getSubtotal(){
+  const inputs = Array.from(document.querySelectorAll('#questions input[type=number]'));
+  return inputs.reduce((sum,i)=> sum+(+i.value||0),0);
+}
+
+function calculate(){
+  const subtotal = getSubtotal();
+  const total = subtotal - 20; 
+  let verdict = '';
+  if (total <= 5) verdict = 'Low vulnerability';
+  else if (total <= 25) verdict = 'Vulnerable';
+  else if (total <= 55) verdict = 'Seriously vulnerable';
+  else verdict = 'Extremely vulnerable';
+
+  el('resultText').innerHTML = `Subtotal: ${subtotal} → Adjusted score: <strong>${total}</strong>`;
+  el('vulnBox').innerHTML = `<strong>Interpretation:</strong> ${verdict}`;
+
+  const wasted = calculateHours(total);
+  updateROI(wasted);
+
+  if(total >= 15 || Number(el('symptomCount').innerText) >= 15){
+    el('ctaBox').style.display='block';
+  } else {
+    el('ctaBox').style.display='none';
+  }
+}
+
+function calculateHours(total){
+  const excess = Math.max(0, total-5);
+  const categories = {
+    "Avoidance": excess * 0.5,
+    "Procrastination": excess * 1.0,
+    "Perfectionism": excess * 0.8,
+    "Poor concentration": excess * 1.2,
+    "Sleep problems": excess * 1.5,
+    "Indecisiveness": excess * 0.7,
+    "Disorganization": excess * 0.8
+  };
+  let totalHours = 0;
+  let breakdown = '<ul>';
+  for(const [k,v] of Object.entries(categories)){
+    totalHours += v;
+    breakdown += `<li>${k}: ~${v.toFixed(1)} hrs/month</li>`;
+  }
+  breakdown += '</ul>';
+  el('hoursBox').innerHTML = `
+    <div><strong>Total hours lost per month: ~${totalHours.toFixed(1)} hrs</strong></div>
+    <div class="small muted" style="margin-top:6px">${breakdown}</div>
+  `;
+  return totalHours;
+}
+
+function updateSymptomCount(){
+  const checked = document.querySelectorAll('#symptomList input[type=checkbox]:checked').length;
+  el('symptomCount').innerText = checked;
+  const badge = el('symptomLevel');
+  if(checked<=7){ badge.className='badge low'; badge.innerText='Low'; }
+  else if(checked<=14){ badge.className='badge mod'; badge.innerText='Moderate'; }
+  else if(checked<=21){ badge.className='badge high'; badge.innerText='High'; }
+  else { badge.className='badge high'; badge.innerText='Very High'; }
+}
+
+function updateROI(hours){
+  const rupeePerHour = Number(el('rupeePerHour').value) || 0;
+  const therapyPrice = Number(el('therapyPrice').value) || 299;
+  const moneyLost = +(hours * rupeePerHour).toFixed(2);
+  el('roiBox').innerHTML = `
+    <div><strong>Estimated monthly impact:</strong></div>
+    <div>Hours lost: <strong>${hours.toFixed(1)} hrs</strong></div>
+    <div>Money lost (@ ₹${rupeePerHour}/hr): <strong>₹${moneyLost}</strong></div>
+    <div>Therapy session cost: <strong>₹${therapyPrice}</strong></div>
+    <div style="margin-top:6px;color:#d62828"><strong>ROI:</strong> Even saving a fraction of wasted time pays for therapy many times over — plus you regain focus, better sleep, energy, and peace of mind.</div>
+  `;
+}
+
+document.getElementById('computeBtn').addEventListener('click', calculate);
+document.getElementById('bookBtn').addEventListener('click', ()=>{ window.location.href = "https://rzp.io/rzp/lMpXAMlc"; });
+
+buildQuestions();
+buildSymptoms();
+updateSymptomCount();
+</script>
+</body>
+</html>
